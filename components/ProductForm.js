@@ -7,16 +7,17 @@ export default function ProductForm({
   title: existingTitle,
   description: existingDescription,
   price: existingPrice,
-  images,
+  images: existingImages,
 }) {
   const [title, setTitle] = useState(existingTitle || "");
   const [description, setDescription] = useState(existingDescription || "");
   const [price, setPrice] = useState(existingPrice || "");
+  const [images, setImages] = useState(existingImages || []);
   const [goToProducts, setGoToProducts] = useState(false);
   const router = useRouter();
   async function saveProduct(event) {
     event.preventDefault();
-    const data = { title, description, price };
+    const data = { title, description, price, images };
 
     if (_id) {
       //update
@@ -30,13 +31,18 @@ export default function ProductForm({
   if (goToProducts) {
     router.push("/products");
   }
-  async function uploadImages(event){
-    const files = event.target?.files;
-    if(files?.length > 0){
+  async function uploadImages(ev) {
+    const files = ev.target?.files;
+    if (files?.length > 0) {
+      // setIsUploading(true);
       const data = new FormData();
-      files.forEach(file => data.append('file', file));
-      const res = await axios.post('/api/upload', data);
-      console.log(res.data);
+      for (const file of files) {
+        data.append("file", file);
+      }
+      const res = await axios.post("/api/upload", data);
+      setImages((oldImages) => {
+        return [...oldImages, ...res.data.links];
+      });
     }
   }
   return (
@@ -49,7 +55,13 @@ export default function ProductForm({
         onChange={(event) => setTitle(event.target.value)}
       />
       <label>Photos</label>
-      <div>
+      <div className="mb-2 flex flex-wrap gap-2">
+        {!!images?.length &&
+          images.map((link) => (
+            <div key={link} className="h-24">
+              <img src={link} alt="" className="rounded-lg" />
+            </div>
+          ))}
         <label className="w-24 h-24 flex flex-col items-center justify-center text-sm text-blue-900 rounded-xl bg-gray-300 cursor-pointer">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +78,7 @@ export default function ProductForm({
             />
           </svg>
           <div>Upload</div>
-          <input type="file" className="hidden" onChange={uploadImages}/>
+          <input type="file" className="hidden" onChange={uploadImages} />
         </label>
         {!images?.length && (
           <div className="mb-2">No Photos for this Product</div>
